@@ -4,8 +4,8 @@ using System.Diagnostics;
 
 public class PoolPerformanceTest
 {
-    // 高强度测试参数（根据你的 96GB 内存可进一步调高）
-    private const int Iterations = 5_000_000; // 可根据需要调整
+    // 测试轮数
+    private const int Iterations = 5_000_000;
 
     // SOH < 85,000 bytes
     private const int SOH_ArraySize = 65_536; // 64 KB
@@ -38,27 +38,37 @@ public class PoolPerformanceTest
     private static void RunTest(string label, int arraySize)
     {
         Console.WriteLine($"=== {label} 测试 ===");
-
+        long sum1, sum2;
+        
+        // --- 测试：不使用池 ---
         ForceGcAndWait();
-        var gcStart = GetGcStats();
-        var memStart = GC.GetTotalMemory(true);
+        var gcStartNoPool = GetGcStats();
+        var memStartNoPool = GC.GetTotalMemory(true);
+        var sw = Stopwatch.StartNew();
 
-        long sum1 = RunWithoutPool(arraySize, Iterations);
-        var gcNoPool = GetGcStats();
-        var memNoPool = GC.GetTotalMemory(true);
-        var timeNoPool = Benchmark(() => RunWithoutPool(arraySize, Iterations)); // warm path, so 2nd run is more accurate
+        sum1 = RunWithoutPool(arraySize, Iterations); // 只执行一次
+        
+        sw.Stop();
+        var timeNoPool = sw.ElapsedMilliseconds;
+        var gcEndNoPool = GetGcStats();
+        var memEndNoPool = GC.GetTotalMemory(true);
 
+        // --- 测试：使用池 ---
         ForceGcAndWait();
-        var gcStart2 = GetGcStats();
-        var memStart2 = GC.GetTotalMemory(true);
+        var gcStartWithPool = GetGcStats();
+        var memStartWithPool = GC.GetTotalMemory(true);
+        sw.Restart();
 
-        long sum2 = RunWithPool(arraySize, Iterations);
-        var gcWithPool = GetGcStats();
-        var memWithPool = GC.GetTotalMemory(true);
-        var timeWithPool = Benchmark(() => RunWithPool(arraySize, Iterations));
+        sum2 = RunWithPool(arraySize, Iterations); // 只执行一次
+        
+        sw.Stop();
+        var timeWithPool = sw.ElapsedMilliseconds;
+        var gcEndWithPool = GetGcStats();
+        var memEndWithPool = GC.GetTotalMemory(true);
 
-        Console.WriteLine($"[不使用池] 耗时: {timeNoPool} ms | GC: Gen0={gcNoPool.Gen0 - gcStart.Gen0}, Gen1={gcNoPool.Gen1 - gcStart.Gen1}, Gen2={gcNoPool.Gen2 - gcStart.Gen2} | Heap Delta: {(memNoPool - memStart) / 1024 / 1024:N1} MB");
-        Console.WriteLine($"[使用池]   耗时: {timeWithPool} ms | GC: Gen0={gcWithPool.Gen0 - gcStart2.Gen0}, Gen1={gcWithPool.Gen1 - gcStart2.Gen1}, Gen2={gcWithPool.Gen2 - gcStart2.Gen2} | Heap Delta: {(memWithPool - memStart2) / 1024 / 1024:N1} MB");
+        // --- 打印结果 ---
+        Console.WriteLine($"[不使用池] 耗时: {timeNoPool} ms | GC: Gen0={gcEndNoPool.Gen0 - gcStartNoPool.Gen0}, Gen1={gcEndNoPool.Gen1 - gcStartNoPool.Gen1}, Gen2={gcEndNoPool.Gen2 - gcStartNoPool.Gen2} | Heap Delta: {(memEndNoPool - memStartNoPool) / 1024 / 1024:N1} MB");
+        Console.WriteLine($"[使用池]   耗时: {timeWithPool} ms | GC: Gen0={gcEndWithPool.Gen0 - gcStartWithPool.Gen0}, Gen1={gcEndWithPool.Gen1 - gcStartWithPool.Gen1}, Gen2={gcEndWithPool.Gen2 - gcStartWithPool.Gen2} | Heap Delta: {(memEndWithPool - memStartWithPool) / 1024 / 1024:N1} MB");
         Console.WriteLine($"结果校验: {sum1 == sum2} (无池={sum1}, 有池={sum2})");
     }
 
@@ -105,14 +115,5 @@ public class PoolPerformanceTest
         GC.Collect();
         GC.WaitForPendingFinalizers();
         GC.Collect();
-    }
-
-    private static long Benchmark(Action action)
-    {
-        ForceGcAndWait();
-        var sw = Stopwatch.StartNew();
-        action();
-        sw.Stop();
-        return sw.ElapsedMilliseconds;
     }
 }

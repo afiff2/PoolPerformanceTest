@@ -24,13 +24,13 @@ LOH Array Size: 1,048,576 bytes (1 MB)
 预热完成。
 
 === SOH (64KB) 测试 ===
-[不使用池] 耗时: 2562 ms | GC: Gen0=6511, Gen1=1628, Gen2=1 | Heap Delta: 0.0 MB
-[使用池]   耗时: 109 ms  | GC: Gen0=1,    Gen1=1,    Gen2=1 | Heap Delta: 0.0 MB
+[不使用池] 耗时: 2467 ms | GC: Gen0=6511, Gen1=1628, Gen2=1 | Heap Delta: 0.0 MB
+[使用池]   耗时: 126 ms  | GC: Gen0=1,    Gen1=1,    Gen2=1 | Heap Delta: 0.0 MB
 结果校验: True (无池=1273252896, 有池=1273252896)
 
 === LOH (1MB) 测试 ===
-[不使用池] 耗时: 84013 ms | GC: Gen0=947033, Gen1=946879, Gen2=946879 | Heap Delta: -1.0 MB
-[使用池]   耗时: 57 ms    | GC: Gen0=1,      Gen1=1,      Gen2=1      | Heap Delta: 1.0 MB
+[不使用池] 耗时: 80770 ms | GC: Gen0=993125, Gen1=992963, Gen2=992963 | Heap Delta: -1.0 MB
+[使用池]   耗时: 58 ms    | GC: Gen0=1,      Gen1=1,      Gen2=1      | Heap Delta: 1.0 MB
 结果校验: True (无池=1273252896, 有池=1273252896)
 ```
 
